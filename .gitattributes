@@ -1,0 +1,18 @@
+# Нормализуем переводы строк к LF в репозитории и в рабочей копии.
+# Без этого на Windows (autocrlf=true) git кладёт CRLF, а Prettier
+# (endOfLine по умолчанию `lf`) отвергает такие файлы — локальный
+# `npm run format:check` падает, хотя CI на Linux зелёный.
+* text=auto eol=lf
+
+# Бинарные файлы не трогаем
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary

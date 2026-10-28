@@ -27,7 +27,7 @@
   "dependencies": {
     "@fastify/static": "^10.1.6",
     "@mantine/core": "^9.7.4",
-    "@mantine/dates": "^9.7.3",
+    "@mantine/dates": "^9.7.4",
     "@mantine/hooks": "^9.7.4",
     "dayjs": "^1.11.23",
     "fastify": "^5.12.7",

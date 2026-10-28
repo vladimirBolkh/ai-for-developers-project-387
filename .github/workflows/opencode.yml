@@ -6,16 +6,35 @@ on:
   pull_request_review_comment:
     types: [created]
 
+# Ограничение параллельных запусков: не больше одного агента на конкретный
+# issue/PR, новый вызов отменяет уже идущий по этому же объекту.
+concurrency:
+  group: opencode-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   opencode:
-    # Срабатываем на /oc или /opencode в начале комментария или после пробела,
-    # чтобы не ловить совпадения внутри других слов (например /oauth-flow).
+    # Запускаем только если:
+    #  1) в комментарии есть команда /oc или /opencode (в начале или после пробела,
+    #     чтобы не ловить совпадения внутри других слов, напр. /oauth-flow);
+    #  2) автор — доверенный участник (OWNER / MEMBER / COLLABORATOR);
+    #  3) автор не бот (чтобы избежать зацикливания бот↔бот).
+    # Недоверенные участники и форки просто не проходят условие и не получают секрет.
     if: |
-      startsWith(github.event.comment.body, '/oc') ||
-      startsWith(github.event.comment.body, '/opencode') ||
-      contains(github.event.comment.body, ' /oc') ||
-      contains(github.event.comment.body, ' /opencode')
+      (
+        startsWith(github.event.comment.body, '/oc') ||
+        startsWith(github.event.comment.body, '/opencode') ||
+        contains(github.event.comment.body, ' /oc') ||
+        contains(github.event.comment.body, ' /opencode')
+      ) &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      ) &&
+      !endsWith(github.actor, '[bot]')
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       id-token: write # OIDC-обмен → токен App opencode-agent (комменты, push)
       contents: read # checkout

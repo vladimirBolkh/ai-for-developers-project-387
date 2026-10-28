@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.2.0...v1.3.0) (2026-10-28)
+
+
+### Features
+
+* add engineering agent skills from project 386 ([b0f2788](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/b0f2788afb2b8339d3b3384b36d85499eef0dc90))
+
 ## [1.2.0](https://github.com/vladimirBolkh/ai-for-developers-project-386/compare/v1.1.0...v1.2.0) (2026-10-21)
 
 

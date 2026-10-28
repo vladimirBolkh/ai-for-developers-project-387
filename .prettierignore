@@ -1,0 +1,15 @@
+dist
+node_modules
+package-lock.json
+
+# Файл генерируется release-please — Prettier переписывает маркеры списков («*» → «-») и ломает проверку
+CHANGELOG.md
+
+# Файлы, сгенерированные платформой Hexlet — не форматировать (hexlet-check.yml: "DO NOT EDIT")
+.github/workflows/hexlet-check.yml
+.github/workflows/README.md
+
+# Сгенерированный код (TypeSpec → OpenAPI → heyapi → Fastify) — не форматировать
+src/api-client
+spec/openapi.yaml
+server/generated

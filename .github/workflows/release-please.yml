@@ -1,0 +1,24 @@
+name: release-please
+
+on:
+  push:
+    branches: [master]
+
+# GITHUB_TOKENу нужны права на запись: создание release-PR, коммитов в ветку
+# релиза, тегов и GitHub Release.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release PR / GitHub Release
+        uses: googleapis/release-please-action@v5
+        with:
+          # Режим одного пакета: версия и CHANGELOG ведутся в этом же репозитории.
+          # manifest-режим (release-please-config.json + .release-please-manifest.json)
+          # нужен только для монорепо.
+          release-type: node
+          token: ${{ secrets.GITHUB_TOKEN }}

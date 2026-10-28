@@ -1,0 +1,413 @@
+openapi: 3.0.0
+info:
+  title: Calls Calendar API
+  version: 0.0.0
+tags: []
+paths:
+  /availability:
+    get:
+      operationId: Availability_get
+      parameters:
+        - name: eventTypeId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Slot'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /bookings:
+    post:
+      operationId: Bookings_create
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meeting'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+    get:
+      operationId: Bookings_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meeting'
+  /event-types:
+    get:
+      operationId: EventTypes_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventType'
+    post:
+      operationId: EventTypes_create
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTypeCreate'
+  /event-types/{id}:
+    get:
+      operationId: EventTypes_read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+    patch:
+      operationId: EventTypes_update
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventTypeUpdate'
+    delete:
+      operationId: EventTypes_remove
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+  /working-hours:
+    get:
+      operationId: WorkingHoursOperations_get
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHours'
+    put:
+      operationId: WorkingHoursOperations_set
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHours'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkingHours'
+components:
+  schemas:
+    BookingRequest:
+      type: object
+      required:
+        - eventTypeId
+        - startDateTime
+        - guestName
+      properties:
+        eventTypeId:
+          type: string
+        startDateTime:
+          type: string
+        guestName:
+          type: string
+        guestEmail:
+          type: string
+    ConflictError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    DayHours:
+      type: object
+      required:
+        - start
+        - end
+      properties:
+        start:
+          type: string
+        end:
+          type: string
+    EventType:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - durationMinutes
+        - format
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+        format:
+          $ref: '#/components/schemas/MeetingFormat'
+    EventTypeCreate:
+      type: object
+      required:
+        - name
+        - description
+        - durationMinutes
+        - format
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+        format:
+          $ref: '#/components/schemas/MeetingFormat'
+    EventTypeUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        durationMinutes:
+          type: integer
+          format: int32
+        format:
+          $ref: '#/components/schemas/MeetingFormat'
+    Meeting:
+      type: object
+      required:
+        - id
+        - eventTypeId
+        - eventTypeName
+        - eventTypeDescription
+        - eventTypeDurationMinutes
+        - eventTypeFormat
+        - startDateTime
+        - guestName
+      properties:
+        id:
+          type: string
+        eventTypeId:
+          type: string
+        eventTypeName:
+          type: string
+        eventTypeDescription:
+          type: string
+        eventTypeDurationMinutes:
+          type: integer
+          format: int32
+        eventTypeFormat:
+          $ref: '#/components/schemas/MeetingFormat'
+        startDateTime:
+          type: string
+        guestName:
+          type: string
+        guestEmail:
+          type: string
+    MeetingFormat:
+      type: string
+      enum:
+        - online
+        - offline
+    NotFoundError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    Slot:
+      type: object
+      required:
+        - startDateTime
+        - status
+      properties:
+        startDateTime:
+          type: string
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+    SlotStatus:
+      type: string
+      enum:
+        - free
+        - busy
+        - unavailable
+    ValidationError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    WorkingHours:
+      type: object
+      required:
+        - monday
+        - tuesday
+        - wednesday
+        - thursday
+        - friday
+        - saturday
+        - sunday
+      properties:
+        monday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true
+        tuesday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true
+        wednesday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true
+        thursday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true
+        friday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true
+        saturday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true
+        sunday:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/DayHours'
+          nullable: true

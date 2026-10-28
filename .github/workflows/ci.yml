@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# Одинаковые прогоны для одной ветки/PR: новый push отменяет уже идущий
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+# Проверочному пайплайну на запись не нужно ничего
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, format, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Tests
+        run: npm test
+
+      - name: Typecheck & build
+        run: npm run build
+
+  commitlint:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Вся история: commitlint сравнивает диапазоны коммитов
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # PR: проверяем все коммиты ветки относительно базовой
+      - name: Lint PR commits
+        if: github.event_name == 'pull_request'
+        run: >-
+          npx commitlint
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
+          --verbose
+
+      # Push напрямую в master: проверяем только что запушенные коммиты
+      # (первая загрузка ветки имеет "before" = 000...000 — её пропускаем)
+      - name: Lint pushed commits
+        if: >-
+          github.event_name == 'push' &&
+          github.event.before != '0000000000000000000000000000000000000000'
+        run: >-
+          npx commitlint
+          --from ${{ github.event.before }}
+          --to ${{ github.sha }}
+          --verbose

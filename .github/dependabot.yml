@@ -1,0 +1,19 @@
+# Еженедельная проверка зависимостей: PR с обновлениями npm-пакетов и GitHub Actions
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    ignore:
+      # typescript-eslint@8 поддерживает только TypeScript < 6.1 — мажорные апдейты ломают npm ci (ERESOLVE)
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

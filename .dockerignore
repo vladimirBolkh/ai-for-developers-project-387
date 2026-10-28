@@ -1,0 +1,16 @@
+# Не тащим в контекст сборки локальные артефакты и мусор
+node_modules
+dist
+server-dist
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.git
+.github
+.husky
+.agents
+coverage
+*.log
+Dockerfile
+.dockerignore

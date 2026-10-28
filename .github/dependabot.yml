@@ -6,6 +6,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # Коммиты Dependabot в формате Conventional Commits ("build(deps): bump ..."),
+    # чтобы их пропускал commitlint (CI job "Conventional Commits")
+    commit-message:
+      prefix: build
+      include: scope
     ignore:
       # typescript-eslint@8 поддерживает только TypeScript < 6.1 — мажорные апдейты ломают npm ci (ERESOLVE)
       - dependency-name: typescript
@@ -17,3 +22,7 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # То же для обновлений GitHub Actions: "build(deps): bump ..."
+    commit-message:
+      prefix: build
+      include: scope

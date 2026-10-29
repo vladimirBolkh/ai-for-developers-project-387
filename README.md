@@ -5,7 +5,7 @@
 
 Web-приложение: **Vite + React + TypeScript + Mantine 9** (UI) + **dayjs** (даты, для `@mantine/dates`).
 
-Прод: **https://calls-calendar.onrender.com** (Render, авто-деплой по пушу в `master`).
+Прод: **https://calls-calendar-387.onrender.com** (Render, авто-деплой по пушу в `master`).
 
 ## Команды
 
@@ -90,7 +90,7 @@ npm run build          # typecheck (tsc -b) + production-сборка
 
 ## Деплой
 
-Прод-сборка запускается в Docker-контейнере на **Render** (web service `calls-calendar`, регион Frankfurt, free-тариф): https://calls-calendar.onrender.com
+Прод-сборка запускается в Docker-контейнере на **Render** (web service `calls-calendar`, регион Frankfurt, free-тариф): https://calls-calendar-387.onrender.com
 
 - `Dockerfile` — multi-stage: собирает SPA (`npm run build`) и бандлит dev-бэкенд (`server/main.ts` через esbuild), в рантайм идут только prod-зависимости. Один процесс на порту `PORT` (по умолчанию 8080) отдаёт и статику из `dist/` (с SPA-fallback для react-router), и API под `/api`.
 - Локально то же самое: `docker build -t calls-calendar .` → `docker run -p 8080:8080 calls-calendar`.

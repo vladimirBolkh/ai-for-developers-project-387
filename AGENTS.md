@@ -79,7 +79,7 @@ SPA «calls_calendar»: **Vite 8 + React 19 + TypeScript 6 + Mantine 9** (+ `@ma
 ## Деплой (Docker + Render)
 
 - Контейнер: multi-stage `Dockerfile` (node:24-alpine): сборка SPA + esbuild-бандл `server/main.ts` → рантайм с prod-зависимостями. Один процесс на `PORT` (по умолчанию 8080) отдаёт и `dist/` (SPA-fallback на `index.html` для react-router), и `/api` — см. `server/index.ts`. Статика раздаётся, только если `dist/` существует, поэтому dev-режим (`npm run server` + Vite) не задет.
-- Хостинг: **Render**, web service `calls-calendar` (регион Frankfurt, free), собирает Dockerfile из `master` при пуше (auto-deploy). Прод-URL: https://calls-calendar.onrender.com
+- Хостинг: **Render**, web service `calls-calendar` (регион Frankfurt, free), собирает Dockerfile из `master` при пуше (auto-deploy). Прод-URL: https://calls-calendar-387.onrender.com
 - Deploy/логи/метрики — через Render MCP (`opencode mcp add render --url https://mcp.render.com/mcp --header "Authorization=Bearer <RENDER_API_KEY>"`); ключ хранить в `opencode.json` (в `.gitignore`), не в репозитории.
 - **Данные in-memory** (`server/store.ts`): при редеплое/рестарте сервиса всё стирается. Для демо это ок; постоянное хранение — отдельная задача (Postgres/Key Value на Render).
 

@@ -25,7 +25,7 @@
     "commitlint": "commitlint --edit"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.6",
+    "@fastify/static": "^10.1.7",
     "@mantine/core": "^9.7.4",
     "@mantine/dates": "^9.7.4",
     "@mantine/hooks": "^9.7.4",

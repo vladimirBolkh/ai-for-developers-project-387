@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.4...v1.3.5) (2026-10-29)
+
+
+### Bug Fixes
+
+* **opencode:** use v1 object-map permission shape (array form not accepted) ([22326c0](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/22326c068226e002bcfd182b6dc9399c23dd5490))
+
 ## [1.3.4](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.3...v1.3.4) (2026-10-29)
 
 

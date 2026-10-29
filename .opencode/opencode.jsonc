@@ -18,4 +18,20 @@
       "model": "opencode/big-pickle",
     },
   },
+
+  // Permission overrides (2026-10-29).
+  //
+  // The default-render keeps `external_directory` as `action: "ask"`, which
+  // presents an interactive prompt when the agent wants to read or write
+  // anything outside the project root (e.g. `~/.config/gh/hosts.yml`,
+  // `~/.local/share/opencode/snapshot/...`). In a CI environment there is
+  // no human to answer, so the run silently waits up to the 60-minute job
+  // timeout. Observed in the wild: a triage run hung for ~22 minutes after
+  // a `gh auth status` invocation before we cancelled the job.
+  //
+  // The runner is ephemeral — nothing on it survives the job — so an
+  // unrestricted `external_directory` is safe. `question` is already
+  // denied in the session metadata, so the agent still can't ask us
+  // anything mid-run.
+  "permissions": [{ "permission": "external_directory", "pattern": "*", "action": "allow" }],
 }

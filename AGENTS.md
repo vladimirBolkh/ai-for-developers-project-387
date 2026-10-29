@@ -6,6 +6,34 @@
 
 SPA «calls_calendar»: **Vite 8 + React 19 + TypeScript 6 + Mantine 9** (+ `@mantine/dates`/`dayjs`). Нужен **Node 24+** (`engines` в `package.json`, столько же в CI). Продакшен-бэкенда в репозитории нет, но есть in-memory dev-бэкенд (`npm run server`); клиент ходит в API через dev-прокси Vite, включаемую `VITE_API_PROXY` в `.env` (шаблон: `.env.example`). Дефолтная ветка — **`master`**.
 
+## Commit conventions
+
+Каждый коммит **ОБЯЗАН** следовать Conventional Commits. Заголовок первой строки имеет ровно формат `<type>(scope): <subject>` — **≤ 100 символов**, **без точки в конце**. Разрешённые типы из `@commitlint/config-conventional`: `feat`, `fix`, `chore`, `ci`, `refactor`, `test`, `docs`, `perf`, `build`, `style`, `revert`. Скобки `(scope)` опциональны.
+
+В репозитории включён husky-хук `.husky/commit-msg`, который гоняет `commitlint` на любом `git commit` — и в локальном клоне, и в CI-раннере при работе GitHub-агента. Любой заголовок, не подходящий под формат, **отклоняется** с `[type-empty]` и `[subject-empty]`, и коммит не создаётся.
+
+**Запрещено**:
+
+- `git commit --no-verify` / `git commit -n` / любой обход husky-хуков.
+- Пустой заголовок (`""`), заголовок без `:` после типа, заголовок из одних только пробелов, `WIP`, `Update README`, `fix bug`, произвольная фраза на русском/английском без типа.
+
+**Хорошие примеры**:
+
+- `docs: extend opencode workflow section in readme`
+- `ci(triage): add opencode-triage workflow for new issues`
+- `fix(server): validate meeting topic length`
+
+**Плохие примеры (будет отклонено commitlint)**:
+
+- `Автотриаж issues + README`
+- `Update README`
+- `WIP`
+- `fix bug`
+
+Перед коммитом заголовок проверяется локально: `echo '<заголовок>' | npx commitlint`. Если хочется быстро поправить — `git commit --amend` с новым сообщением; повторно хук отработает.
+
+Это правило действует на **все коммиты**, включая те, что делает GitHub-агент в Actions. Когда агент делает `git commit`, заголовок должен сразу соответствовать формату, иначе ветка не запушится.
+
 ## Команды
 
 - `npm run dev` — dev-сервер на `http://localhost:5173`

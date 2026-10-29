@@ -25,26 +25,40 @@
   //   opencode  → V1 (v1.19.5 today) — installed by `opencode.ai/install | bash`,
   //                       invoked by `opencode github run` in action.yml
   //   opencode2 → V2 (v2.2.x today) — modern schema, separate binary
-  // The CI runner uses V1 right now, so we have to author permissions in V1 syntax.
-  // V2 would put the same rule under `"permissions": [{ "action", "resource", "effect" }]`,
-  // but that is exactly what V1 rejects with
-  //   "V2 permissions are not supported by OpenCode V1. Use V1 "permission" rules or run opencode2."
+  // The CI runner uses V1 right now. There are THREE completely different
+  // shapes for this file depending on which CLI reads it.
+  //
+  //   V1 *config-file* (what this file must follow today):
+  //     "permission": "<allow|deny|ask>"                                       ← global default
+  //     "permission": { "<tool>": "<allow|deny|ask>", ... }                   ← per-tool, this file
+  //     "permission": { "<tool>": { "<pattern>": "<allow|deny|ask>", ... } }  ← per-pattern
+  //   V1 rejects an array of rule-objects with:
+  //     "Expected PermissionActionConfig | object | undefined, got [...]".
+  //
+  //   V1 *session-metadata* (what the runtime prints in logs, line 257-262):
+  //     permission: [ { permission, pattern, action }, ... ]
+  //   Don't confuse the two. This config-file form is the OBJECT, never the array.
+  //
+  //   V2 (the modern schema; would be rejected by V1 today):
+  //     "permissions": [ { "action": "...", "resource": "...", "effect": "..." }, ... ]
+  //   V1 rejects this with "V2 permissions are not supported by OpenCode V1.
+  //   Use V1 'permission' rules or run opencode2."
   //
   // Why this rule exists at all: the opencode CLI defaults
-  // `external_directory` to `action: "ask"`, which asks the user
-  // interactively any time the agent wants to read or write outside the
-  // project root (e.g. `~/.config/gh/hosts.yml`, `~/.local/share/opencode/snapshot/...`).
+  // `external_directory` to "ask", which presents an interactive prompt
+  // any time the agent wants to read or write outside the project root
+  // (e.g. `~/.config/gh/hosts.yml`, `~/.local/share/opencode/snapshot/...`).
   // In a CI environment there is no human to answer, so the run silently
   // waits up to the 60-minute job timeout. Observed in the wild: a triage
-  // run hung for ~22 minutes after a `gh auth status` invocation.
+  // run hung for ~22 minutes after a `gh auth status` invocation before
+  // we cancelled the job.
   //
-  // V1 syntax:
-  //   top-level key:  "permission" (singular!)
-  //   rule fields:    { permission, pattern, action }
-  // The runner is ephemeral — nothing on it survives the job — so an
-  // unrestricted `external_directory` is safe. `question` is already
-  // denied in session metadata, so the agent still can't ask us anything.
-  // To narrow later: replace `*` with explicit paths
-  // (`/home/runner/.config/gh/*`, `/home/runner/.local/share/opencode/*`).
-  "permission": [{ "permission": "external_directory", "pattern": "*", "action": "allow" }],
+  // To narrow later (still V1 shape): turn the value into a nested object:
+  //   "permission": { "external_directory": { "/home/runner/.config/gh/*": "allow" } }
+  // Other supported tool keys: read, edit, glob, grep, list, bash, task,
+  // todowrite, question, webfetch. See $defs.PermissionConfig in
+  // https://opencode.ai/config.json for the canonical list.
+  "permission": {
+    "external_directory": "allow",
+  },
 }

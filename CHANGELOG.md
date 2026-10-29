@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.0...v1.3.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **opencode:** pin action to v2.2.1 and probe free-tier with big-pickle ([cf63759](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/cf63759bdb6144e72a8bf6023157f29e0b8bd8f2))
+
 ## [1.3.0](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.2.0...v1.3.0) (2026-10-28)
 
 

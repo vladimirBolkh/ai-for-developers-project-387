@@ -8,6 +8,8 @@ dist
 !.env.example
 # Конфиг OpenCode с MCP-ключами (Render API key) — не коммитить
 opencode.json
+# Отчёты аудита (opencode-audit) — только артефакты прогонов, не в коммиты
+audit-*.md
 .DS_Store
 .agents/
 skills-lock.json

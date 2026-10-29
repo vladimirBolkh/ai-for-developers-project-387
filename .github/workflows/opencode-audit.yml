@@ -1,0 +1,190 @@
+name: opencode-audit
+
+# Ночной аудит приложения: собирает данные по переменной APP_URL, отдаёт их
+# агенту на разбор, сохраняет вывод в артефакт прогона и создаёт issues только
+# по новым находкам (дедупликация — по метке audit). Ручной запуск — кнопкой
+# Run workflow (workflow_dispatch): режим audit — обычный аудит, режим readme —
+# агент дополняет README.md описанием этого воркфлоу со ссылкой на прогон.
+#
+# Отчёты (audit-*.md) в .gitignore — в коммиты не попадают, хранятся только
+# как артефакт прогона и в step summary.
+run-name: opencode-audit ${{ inputs.mode && format('({0})', inputs.mode) || '(scheduled)' }}
+
+on:
+  schedule:
+    # Ежедневно 03:43 UTC (06:43 MSK): частота ≤ 1 запуска в сутки; минута не
+    # на :00 — GitHub просит избегать начала часа из-за пиковой нагрузки.
+    - cron: '43 3 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'audit — аудит приложения; readme — агент дополняет README описанием воркфлоу'
+        required: false
+        default: audit
+        type: choice
+        options:
+          - audit
+          - readme
+
+# Параллельных аудитов нет: работающий запуск не отменяется (ревью/аудит не
+# должен обрываться на середине), новый встаёт в очередь — GitHub держит один
+# pending-запуск на группу.
+concurrency:
+  group: opencode-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: App audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write # OIDC-обмен → токен App opencode-agent (создание issues)
+      contents: read # checkout
+      pull-requests: read # контекст, если агент зайдёт в PR
+      issues: read # поиск существующих issues для дедупликации
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Сбор данных — входной «отчёт» для агента. Free-тариф спит: первый
+      # запрос будит сервис (до ~60-90с), max-time 90 покрывает cold start.
+      - name: Collect app data
+        if: ${{ inputs.mode != 'readme' }}
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          set -uo pipefail
+          if [ -z "$APP_URL" ]; then
+            echo "::error::Переменная APP_URL не задана в настройках репозитория"
+            exit 1
+          fi
+          OUT=audit-input.md
+          {
+            echo "# Отчёт сбора данных аудита"
+            echo
+            echo "- Дата (UTC): $(date -u +%FT%TZ)"
+            echo "- Цель: $APP_URL"
+          } > "$OUT"
+
+          probe() {
+            local path="$1" code total size meta
+            meta=$(curl -sS -L --max-time 90 -D /tmp/audit-headers -o /tmp/audit-body \
+              -w '%{http_code} %{time_total} %{size_download}' "$APP_URL$path" 2>/tmp/audit-err) \
+              || meta="000 0 0"
+            read -r code total size <<< "$meta"
+            {
+              echo "## GET $path"
+              echo
+              echo "- HTTP: $code · время ответа: ${total}s · размер: ${size} байт"
+              echo
+              echo '```'
+              head -c 2000 /tmp/audit-body 2>/dev/null
+              echo
+              echo '```'
+              echo
+              echo "Заголовки ответа:"
+              echo '```'
+              head -30 /tmp/audit-headers 2>/dev/null
+              echo '```'
+              echo
+            } >> "$OUT"
+            echo "GET $path → $code (${total}s)"
+          }
+
+          probe '/'
+          probe '/book'
+          probe '/api/nonexistent-audit-probe'
+
+          echo '## Входные данные для агента' >> "$GITHUB_STEP_SUMMARY"
+          cat "$OUT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run OpenCode audit
+        if: ${{ inputs.mode != 'readme' }}
+        # Пин синхронен с opencode.yml и opencode-review.yml: v2.1.4 — последний
+        # релиз с github/action.yml. Бампить все воркфлоу вместе.
+        uses: anomalyco/opencode/github@v2.1.4
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/big-pickle
+          share: 'true'
+          prompt: |
+            Проведи аудит приложения по собранным данным.
+
+            Вход: файл audit-input.md — статусы, времена ответа, заголовки и
+            сниппеты страниц. Цель аудита: ${{ vars.APP_URL }}.
+
+            1. Прочитай audit-input.md; при необходимости повтори запросы сам.
+            2. Аудит по чек-листу: доступность и стабильность ответов; корректность
+               SPA-fallback и JSON-404 для несуществующих /api-путей; безопасность
+               (лишние заголовки, утечка версий, CORS); соответствие README.md и
+               GLOSSARY.md заявленному поведению.
+            3. Сохрани вывод в файл audit-report.md: находки уровня
+               (blocker/major/minor/nit), для каждой — как воспроизвести и как
+               исправить. Если находок нет — так и напиши.
+            4. Дедупликация: через GitHub найди существующие issues с меткой audit.
+               Если находка семантически совпадает с существующим issue — не
+               создавай дубль, упомяни его номер в отчёте.
+            5. Создай issue ТОЛЬКО по новым находкам: заголовок `audit: <коротко>`,
+               метка audit, в описании — URL, шаги воспроизведения, вывод, предложение
+               по исправлению. Одна находка — один issue.
+            6. Если реальных находок НЕТ — создай один issue с меткой audit-training
+               и заголовком, начинающимся с «[УЧЕБНАЯ ЗАДАЧА]»: это демонстрационный
+               сценарий «аудит без находок» для учебного отчёта; в описании явно
+               укажи, что задача учебная.
+            7. Ничего не коммить и не пушь: отчёт остаётся файлом врабочей директории.
+            8. В конце напиши в лог: созданные issues (номера и ссылки), дубликаты
+               («пропущено: дубликат #N») или «учебная задача #N».
+
+      # Вывод агента дублируется в step summary страницы прогона — так он
+      # доступен без раскрытия лога шага.
+      - name: Publish agent output
+        if: ${{ always() && inputs.mode != 'readme' }}
+        run: |
+          if [ -f audit-report.md ]; then
+            echo '## Вывод агента (audit-report.md)' >> "$GITHUB_STEP_SUMMARY"
+            cat audit-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'audit-report.md не создан — вывод агента см. в логе шага.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Отчёты живут только здесь: артефакт прогона, в коммиты не попадают.
+      - name: Save report artifact
+        if: ${{ always() && inputs.mode != 'readme' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: |
+            audit-input.md
+            audit-report.md
+          if-no-files-found: warn
+
+      - name: Run OpenCode readme update
+        if: ${{ inputs.mode == 'readme' }}
+        uses: anomalyco/opencode/github@v2.1.4
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/big-pickle
+          share: 'true'
+          prompt: |
+            Дополни описание воркфлоу аудита в README.md.
+
+            1. В README.md добавь раздел про воркфлоу аудита
+               (.github/workflows/opencode-audit.yml): что делает (ночной аудит
+               приложения по переменной APP_URL + ручной запуск кнопкой Run
+               workflow), cron, права авторизации (OIDC → App opencode-agent),
+               что агент создаёт issues по находкам с меткой audit и не создаёт
+               дублей при повторных запусках.
+            2. Укажи ссылку на этот прогон:
+               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            3. Укажи место хранения результата: артефакт audit-report на странице
+               этого прогона (Run → Artifacts) и вывод агента в логе шага.
+            4. Опирайся только на факты: не выдумывай результаты аудита.
+            5. Закоммить изменение в master: заголовок
+               `docs(audit): describe audit workflow in readme` (Conventional
+               Commits). Сейчас HEAD detached — коммить и пушь так:
+               `git add README.md && git commit -m "..." && git push origin HEAD:master`.

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.3...v1.3.4) (2026-10-29)
+
+
+### Bug Fixes
+
+* **opencode:** use v1 permission rule syntax to match installed CLI ([923cce0](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/923cce06a02ca386febbcbf4ef3912d4ebe46e8e))
+
 ## [1.3.3](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.2...v1.3.3) (2026-10-29)
 
 

@@ -9,6 +9,7 @@ import {
   updateEventType,
   type Store,
 } from '../server/store'
+import type { BookingRequest } from '../server/generated/types'
 
 // Понедельник 5 января 2026 (Date.getDay() === 1), локальная полночь.
 const NOW = new Date(2026, 0, 5, 0, 0, 0)
@@ -38,6 +39,14 @@ function seed(): { store: Store; eventTypeId: string } {
   return { store, eventTypeId: created.eventType.id }
 }
 
+function booking(
+  eventTypeId: string,
+  startDateTime: string,
+  overrides: Partial<BookingRequest> = {},
+): BookingRequest {
+  return { eventTypeId, startDateTime, guestName: 'Аня', topic: 'Тема', ...overrides }
+}
+
 describe('Доменная логика бэкенда (in-memory store)', () => {
   describe('availability', () => {
     it('генерирует сетку 15 минут внутри рабочих часов со свободными слотами', () => {
@@ -56,11 +65,7 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
     it('помечает занятый и пересекающийся слоты как busy, «впритык» — как free', () => {
       const { store, eventTypeId } = seed()
-      createBooking(
-        store,
-        { eventTypeId, startDateTime: iso(10, 0), guestName: 'Гость', topic: 'Тема' },
-        NOW,
-      )
+      createBooking(store, booking(eventTypeId, iso(10, 0), { guestName: 'Гость' }), NOW)
 
       const slots = computeAvailability(store, eventTypeId, NOW)
       const statusByTime = new Map(slots.map((s) => [s.startDateTime, s.status]))
@@ -94,13 +99,10 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
       const { store, eventTypeId } = seed()
       const result = createBooking(
         store,
-        {
-          eventTypeId,
-          startDateTime: iso(9, 0),
-          guestName: 'Аня',
+        booking(eventTypeId, iso(9, 0), {
           topic: 'Обсудить проект',
           guestEmail: 'a@b.c',
-        },
+        }),
         NOW,
       )
 
@@ -116,12 +118,7 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
       const { store, eventTypeId } = seed()
       const result = createBooking(
         store,
-        {
-          eventTypeId,
-          startDateTime: iso(9, 0),
-          guestName: 'Аня',
-          topic: '  Обсудить проект  ',
-        },
+        booking(eventTypeId, iso(9, 0), { topic: '  Обсудить проект  ' }),
         NOW,
       )
 
@@ -138,11 +135,7 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
       const invalidTopics = ['', '   ', 'а'.repeat(201)]
 
       for (const topic of invalidTopics) {
-        const result = createBooking(
-          store,
-          { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic },
-          NOW,
-        )
+        const result = createBooking(store, booking(eventTypeId, iso(9, 0), { topic }), NOW)
 
         expect(result.ok).toBe(false)
         if (!result.ok) {
@@ -157,11 +150,7 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
       const { store, eventTypeId } = seed()
       const topic = `  ${'а'.repeat(200)}  `
 
-      const result = createBooking(
-        store,
-        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic },
-        NOW,
-      )
+      const result = createBooking(store, booking(eventTypeId, iso(9, 0), { topic }), NOW)
 
       expect(result.ok).toBe(true)
       if (!result.ok) return
@@ -170,15 +159,11 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
     it('возвращает 409 при пересечении с уже занятым слотом', () => {
       const { store, eventTypeId } = seed()
-      createBooking(
-        store,
-        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic: 'Тема' },
-        NOW,
-      )
+      createBooking(store, booking(eventTypeId, iso(9, 0)), NOW)
 
       const conflict = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(9, 15), guestName: 'Борис', topic: 'Тема' },
+        booking(eventTypeId, iso(9, 15), { guestName: 'Борис' }),
         NOW,
       )
 
@@ -189,15 +174,11 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
     it('допускает запись «впритык» к существующей', () => {
       const { store, eventTypeId } = seed()
-      createBooking(
-        store,
-        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic: 'Тема' },
-        NOW,
-      )
+      createBooking(store, booking(eventTypeId, iso(9, 0)), NOW)
 
       const backToBack = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(9, 30), guestName: 'Борис', topic: 'Тема' },
+        booking(eventTypeId, iso(9, 30), { guestName: 'Борис' }),
         NOW,
       )
 
@@ -207,16 +188,8 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
     it('отклоняет слот вне рабочих часов и не по сетке (400)', () => {
       const { store, eventTypeId } = seed()
 
-      const outside = createBooking(
-        store,
-        { eventTypeId, startDateTime: iso(8, 0), guestName: 'Аня', topic: 'Тема' },
-        NOW,
-      )
-      const misaligned = createBooking(
-        store,
-        { eventTypeId, startDateTime: iso(9, 7), guestName: 'Аня', topic: 'Тема' },
-        NOW,
-      )
+      const outside = createBooking(store, booking(eventTypeId, iso(8, 0)), NOW)
+      const misaligned = createBooking(store, booking(eventTypeId, iso(9, 7)), NOW)
 
       expect(outside.ok).toBe(false)
       if (!outside.ok) expect(outside.status).toBe(400)
@@ -265,16 +238,8 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
   it('upcomingMeetings возвращает только будущие встречи, отсортированные', () => {
     const { store, eventTypeId } = seed()
-    createBooking(
-      store,
-      { eventTypeId, startDateTime: iso(10, 0), guestName: 'Аня', topic: 'Тема' },
-      NOW,
-    )
-    createBooking(
-      store,
-      { eventTypeId, startDateTime: iso(9, 0), guestName: 'Борис', topic: 'Тема' },
-      NOW,
-    )
+    createBooking(store, booking(eventTypeId, iso(10, 0)), NOW)
+    createBooking(store, booking(eventTypeId, iso(9, 0), { guestName: 'Борис' }), NOW)
 
     const upcoming = upcomingMeetings(store, NOW)
 

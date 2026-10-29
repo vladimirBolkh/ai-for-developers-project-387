@@ -27,7 +27,7 @@ export type WeekdayKey = (typeof WEEKDAY_KEYS)[number]
 
 export const SLOT_STEP_MINUTES = 15
 export const WINDOW_DAYS = 14
-export const TOPIC_MAX_LENGTH = 200
+const TOPIC_MAX_LENGTH = 200
 
 export interface Store {
   eventTypes: EventType[]

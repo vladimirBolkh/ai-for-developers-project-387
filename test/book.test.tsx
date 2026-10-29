@@ -251,10 +251,13 @@ describe('Подтверждение записи', () => {
     expect(sdkMocks.bookingsCreate).not.toHaveBeenCalled()
   })
 
-  it('ограничивает ввод темы 200 символами', async () => {
+  it('не даёт ввести больше 200 символов темы', async () => {
     await pickSlotAndOpenForm()
+    const input = screen.getByLabelText(/Тема встречи/)
 
-    expect(screen.getByLabelText(/Тема встречи/)).toHaveAttribute('maxLength', '200')
+    await userEvent.type(input, 'а'.repeat(201))
+
+    expect(input).toHaveValue('а'.repeat(200))
   })
 
   it('обрезает тему, отправляет её в запросе и показывает на подтверждении', async () => {

@@ -20,7 +20,7 @@ import {
 } from '@mantine/core'
 import { Calendar } from '@mantine/dates'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 // Каноничная метка дня — локальная дата ISO-момента (строго та же часть даты,
@@ -56,6 +56,22 @@ export default function BookPage() {
   const [bookingError, setBookingError] = useState<'validation' | 'unknown' | null>(null)
   const [confirmed, setConfirmed] = useState<Meeting | null>(null)
 
+  const resetGuestIdentity = useCallback(() => {
+    setGuestName('')
+    setGuestEmail('')
+    setNameError(null)
+  }, [])
+
+  const resetTopic = useCallback(() => {
+    setTopic('')
+    setTopicError(null)
+  }, [])
+
+  const resetGuestForm = useCallback(() => {
+    resetGuestIdentity()
+    resetTopic()
+  }, [resetGuestIdentity, resetTopic])
+
   useEffect(() => {
     let cancelled = false
     eventTypesList().then((result) => {
@@ -80,6 +96,7 @@ export default function BookPage() {
     setSelectedSlot(null)
     setConfirmed(null)
     setBookingError(null)
+    resetGuestIdentity()
     availabilityGet({ query: { eventTypeId: selectedId } }).then((result) => {
       if (cancelled) return
       const list = asArray<Slot>(result.data)
@@ -91,16 +108,12 @@ export default function BookPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedId, reloadKey])
+  }, [selectedId, reloadKey, resetGuestIdentity])
 
-  // Данные гостя сбрасываются при смене типа, но переживают конфликт слота (409).
+  // Тема сбрасывается при смене типа, но переживает конфликт слота (409).
   useEffect(() => {
-    setGuestName('')
-    setGuestEmail('')
-    setTopic('')
-    setNameError(null)
-    setTopicError(null)
-  }, [selectedId])
+    resetTopic()
+  }, [selectedId, resetTopic])
 
   // Дни, на которые есть хотя бы один свободный слот (остальные — disabled + серый фон).
   const availableDays = useMemo(() => {
@@ -211,11 +224,7 @@ export default function BookPage() {
     setConfirmed(null)
     setSelectedSlot(null)
     setSelectedDay(null)
-    setGuestName('')
-    setGuestEmail('')
-    setTopic('')
-    setNameError(null)
-    setTopicError(null)
+    resetGuestForm()
     setBookingError(null)
     setNotice(null)
     setReloadKey((key) => key + 1)

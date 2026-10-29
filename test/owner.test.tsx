@@ -25,6 +25,7 @@ const meeting: Meeting = {
   // тест одинаково проходит в любом поясе (включая UTC в CI).
   startDateTime: new Date(2026, 9, 21, 9, 0).toISOString(),
   guestName: 'Анна',
+  topic: 'Обсудить проект',
 }
 
 const configuredHours: WorkingHours = {
@@ -187,13 +188,29 @@ describe('Предстоящие встречи в терминале владе
     expect(sdkMocks.bookingsList).toHaveBeenCalled()
   })
 
-  it('показывает имя гостя, тип события и время', async () => {
+  it('показывает тему, имя гостя, тип события и время', async () => {
     sdkMocks.bookingsList.mockResolvedValue({ data: [meeting], error: undefined })
 
     renderOwnerPage()
 
-    expect(await screen.findByText('Анна')).toBeInTheDocument()
+    expect(await screen.findByText('Обсудить проект')).toBeInTheDocument()
+    expect(screen.getByText('Анна')).toBeInTheDocument()
+    expect(screen.getByText('Консультация')).toBeInTheDocument()
     expect(screen.getByText('2026-10-21 · 09:00')).toBeInTheDocument()
     expect(screen.getByText(/30 мин · онлайн/)).toBeInTheDocument()
+  })
+
+  it('сохраняет тему встречи после удаления её типа события', async () => {
+    sdkMocks.eventTypesList
+      .mockResolvedValueOnce({ data: [consultation], error: undefined })
+      .mockResolvedValueOnce({ data: [], error: undefined })
+    sdkMocks.eventTypesRemove.mockResolvedValue({ data: undefined, error: undefined })
+    sdkMocks.bookingsList.mockResolvedValue({ data: [meeting], error: undefined })
+
+    renderOwnerPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Удалить' }))
+
+    expect(await screen.findByText('Пока нет типов встреч.')).toBeInTheDocument()
+    expect(screen.getByText('Обсудить проект')).toBeInTheDocument()
   })
 })

@@ -21,17 +21,30 @@
 
   // Permission overrides (2026-10-29).
   //
-  // The default-render keeps `external_directory` as `action: "ask"`, which
-  // presents an interactive prompt when the agent wants to read or write
-  // anything outside the project root (e.g. `~/.config/gh/hosts.yml`,
-  // `~/.local/share/opencode/snapshot/...`). In a CI environment there is
-  // no human to answer, so the run silently waits up to the 60-minute job
-  // timeout. Observed in the wild: a triage run hung for ~22 minutes after
-  // a `gh auth status` invocation before we cancelled the job.
+  // V1 vs V2 — be aware: `anomalyco/opencode` ships two CLIs:
+  //   opencode  → V1 (v1.19.5 today) — installed by `opencode.ai/install | bash`,
+  //                       invoked by `opencode github run` in action.yml
+  //   opencode2 → V2 (v2.2.x today) — modern schema, separate binary
+  // The CI runner uses V1 right now, so we have to author permissions in V1 syntax.
+  // V2 would put the same rule under `"permissions": [{ "action", "resource", "effect" }]`,
+  // but that is exactly what V1 rejects with
+  //   "V2 permissions are not supported by OpenCode V1. Use V1 "permission" rules or run opencode2."
   //
+  // Why this rule exists at all: the opencode CLI defaults
+  // `external_directory` to `action: "ask"`, which asks the user
+  // interactively any time the agent wants to read or write outside the
+  // project root (e.g. `~/.config/gh/hosts.yml`, `~/.local/share/opencode/snapshot/...`).
+  // In a CI environment there is no human to answer, so the run silently
+  // waits up to the 60-minute job timeout. Observed in the wild: a triage
+  // run hung for ~22 minutes after a `gh auth status` invocation.
+  //
+  // V1 syntax:
+  //   top-level key:  "permission" (singular!)
+  //   rule fields:    { permission, pattern, action }
   // The runner is ephemeral — nothing on it survives the job — so an
   // unrestricted `external_directory` is safe. `question` is already
-  // denied in the session metadata, so the agent still can't ask us
-  // anything mid-run.
-  "permissions": [{ "permission": "external_directory", "pattern": "*", "action": "allow" }],
+  // denied in session metadata, so the agent still can't ask us anything.
+  // To narrow later: replace `*` with explicit paths
+  // (`/home/runner/.config/gh/*`, `/home/runner/.local/share/opencode/*`).
+  "permission": [{ "permission": "external_directory", "pattern": "*", "action": "allow" }],
 }

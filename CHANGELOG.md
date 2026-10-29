@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.2...v1.3.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **opencode:** allow external_directory so CI runs don't hang on permission ask ([6913e5e](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/6913e5eb01b600aa40745bd00bb8928d2cc1dfdd))
+
 ## [1.3.2](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.1...v1.3.2) (2026-10-29)
 
 

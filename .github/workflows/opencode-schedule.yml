@@ -1,0 +1,128 @@
+name: opencode-schedule
+
+# Плановый (ночной) свип авторевью: обходит открытые PR и оставляет ревью по
+# критериям REVIEW.md. Дополняет opencode-review — тот ревьюит PR событийно
+# (открытие/пуш), этот подбирает пропущенное: упавшие и отменённые ревью,
+# PR, пролежавшие без свежей оценки.
+#
+# Бюджет из opencode-review свип не расходует: тот считает прогоны с именем
+# «opencode-review #N», у этого воркфлоу другое имя. Поэтому правило экономии
+# задано в промпте: PR без новых коммитов после последнего ревью пропускается.
+#
+# schedule выполняется только с default-ветки (master) — файл должен быть в master.
+run-name: opencode-schedule${{ inputs.pr && format(' pr#{0}', inputs.pr) || '' }}
+
+on:
+  schedule:
+    # Ежедневно 01:23 UTC (04:23 MSK): к утру свежие ревью уже в PR.
+    # Минуту выбрали не на :00 — GitHub просит избегать начала часа
+    # из-за пиковой нагрузки на cron-раннеры.
+    - cron: '23 1 * * *'
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Номер открытого PR для внепланового ревью (пусто — все открытые)'
+        required: false
+        type: string
+
+# Ограничение параллельных запусков: свипы не бегут одновременно и работающий
+# запуск не отменяется (ревью не должно обрываться на середине). Новый запуск
+# встаёт в очередь — GitHub держит один pending-запуск на группу.
+concurrency:
+  group: opencode-schedule
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Nightly PR review sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write # OIDC-обмен → токен App opencode-agent (комменты в PR)
+      contents: read # checkout
+      pull-requests: read # список открытых PR и их состояние
+      issues: read # контекст комментариев PR
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # Глубокая история не нужна: свип читает диф каждого PR через GitHub
+          persist-credentials: false
+
+      - name: Collect PRs to review
+        id: prs
+        uses: actions/github-script@v7
+        env:
+          # Ручной запуск с указанием PR: 'pr' из workflow_dispatch (пусто у schedule)
+          PR_INPUT: ${{ inputs.pr }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prInput = (process.env.PR_INPUT || '').trim();
+            let numbers = [];
+
+            if (prInput) {
+              const pullNumber = Number.parseInt(prInput, 10);
+              if (!Number.isInteger(pullNumber)) {
+                core.setFailed(`inputs.pr: ожидался номер PR, получено "${prInput}"`);
+                return;
+              }
+              try {
+                const { data: pr } = await github.rest.pulls.get({
+                  owner,
+                  repo,
+                  pull_number: pullNumber,
+                });
+                if (pr.state !== 'open') {
+                  core.setFailed(`PR #${pullNumber} не открыт (state=${pr.state})`);
+                  return;
+                }
+              } catch (error) {
+                core.setFailed(`PR #${pullNumber} не найден: ${error.message}`);
+                return;
+              }
+              numbers = [pullNumber];
+            } else {
+              const { data: prs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                per_page: 100,
+              });
+              // Draft ревьюим по ready_for_review (событийно), ботов не трогаем.
+              // Fork-PR включены: раннеру идёт с master, OIDC и секреты доступны.
+              numbers = prs
+                .filter((pr) => !pr.draft && !pr.user.login.endsWith('[bot]'))
+                .map((pr) => pr.number);
+            }
+
+            core.info(numbers.length ? `PR к ревью: ${numbers.join(', ')}` : 'Открытых PR нет');
+            core.setOutput('numbers', numbers.join(', '));
+
+      - name: Run OpenCode sweep
+        # Нечего ревьюить — не тратим установку opencode и вызов модели
+        if: steps.prs.outputs.numbers != ''
+        # Пин синхронен с opencode.yml и opencode-review.yml: v2.1.4 — последний
+        # релиз с github/action.yml. Бампить все три воркфлоу вместе.
+        uses: anomalyco/opencode/github@v2.1.4
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/big-pickle
+          share: 'true'
+          prompt: |
+            Проведи плановое авторевью открытых PR: ${{ steps.prs.outputs.numbers }}.
+
+            1. Для каждого PR: посмотри диф против master и оцени по критериям
+               REVIEW.md (уровни blocker/major/minor/nit, привязка к файлу и строке).
+            2. Если у PR уже есть авторевью opencode и после него не было новых
+               коммитов — пропусти этот PR и упомяни его в итоговой сводке.
+            3. По каждому отревьюированному PR оставь ровно один комментарий
+               по разделу «Формат вывода» REVIEW.md: вердикт (approve / needs
+               fixes), находки, оценка риска и способа отката.
+            4. В конце напиши краткую сводку в лог запуска: отревьюировано,
+               пропущено (с причинами), ошибки.
+            5. Ты ревьюер, а не автор: ничего не коммить, не пушь, не создавай
+               веток и PR, не меняй REVIEW.md и шаблон PR.
+
+            Если список пуст — просто заверши.

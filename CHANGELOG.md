@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.1...v1.3.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **opencode:** pin action to v2.1.4 because v2.2.x no longer ships action.yml ([6e5cbaa](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/6e5cbaaa9368ea58deb4f1b3f02cdf1bf7ad1bb0))
+
 ## [1.3.1](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.0...v1.3.1) (2026-10-29)
 
 

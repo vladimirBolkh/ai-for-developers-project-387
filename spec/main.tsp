@@ -57,6 +57,7 @@ model BookingRequest {
   eventTypeId: string;
   startDateTime: string;
   guestName: string;
+  topic: string;
   guestEmail?: string;
 }
 
@@ -69,6 +70,7 @@ model Meeting {
   eventTypeFormat: MeetingFormat;
   startDateTime: string;
   guestName: string;
+  topic: string;
   guestEmail?: string;
 }
 

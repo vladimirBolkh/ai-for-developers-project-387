@@ -27,6 +27,7 @@ export type WeekdayKey = (typeof WEEKDAY_KEYS)[number]
 
 export const SLOT_STEP_MINUTES = 15
 export const WINDOW_DAYS = 14
+export const TOPIC_MAX_LENGTH = 200
 
 export interface Store {
   eventTypes: EventType[]
@@ -128,6 +129,16 @@ export function createBooking(
   const eventType = store.eventTypes.find((type) => type.id === body.eventTypeId)
   if (!eventType) return { ok: false, status: 404, message: 'Event type not found' }
 
+  const topic = typeof body.topic === 'string' ? body.topic.trim() : ''
+  if (!topic) return { ok: false, status: 400, message: 'topic must not be empty' }
+  if (topic.length > TOPIC_MAX_LENGTH) {
+    return {
+      ok: false,
+      status: 400,
+      message: `topic must be at most ${TOPIC_MAX_LENGTH} characters`,
+    }
+  }
+
   const start = new Date(body.startDateTime)
   if (Number.isNaN(start.getTime())) {
     return { ok: false, status: 400, message: 'Invalid startDateTime' }
@@ -166,6 +177,7 @@ export function createBooking(
     eventTypeFormat: eventType.format,
     startDateTime: start.toISOString(),
     guestName: body.guestName,
+    topic,
     ...(body.guestEmail ? { guestEmail: body.guestEmail } : {}),
   }
   store.meetings.push(meeting)

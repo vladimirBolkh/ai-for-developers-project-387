@@ -8,6 +8,7 @@ export type BookingRequest = {
     eventTypeId: string;
     startDateTime: string;
     guestName: string;
+    topic: string;
     guestEmail?: string;
 };
 
@@ -51,6 +52,7 @@ export type Meeting = {
     eventTypeFormat: MeetingFormat;
     startDateTime: string;
     guestName: string;
+    topic: string;
     guestEmail?: string;
 };
 

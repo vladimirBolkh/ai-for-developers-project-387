@@ -56,7 +56,11 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
     it('помечает занятый и пересекающийся слоты как busy, «впритык» — как free', () => {
       const { store, eventTypeId } = seed()
-      createBooking(store, { eventTypeId, startDateTime: iso(10, 0), guestName: 'Гость' }, NOW)
+      createBooking(
+        store,
+        { eventTypeId, startDateTime: iso(10, 0), guestName: 'Гость', topic: 'Тема' },
+        NOW,
+      )
 
       const slots = computeAvailability(store, eventTypeId, NOW)
       const statusByTime = new Map(slots.map((s) => [s.startDateTime, s.status]))
@@ -90,7 +94,13 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
       const { store, eventTypeId } = seed()
       const result = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', guestEmail: 'a@b.c' },
+        {
+          eventTypeId,
+          startDateTime: iso(9, 0),
+          guestName: 'Аня',
+          topic: 'Обсудить проект',
+          guestEmail: 'a@b.c',
+        },
         NOW,
       )
 
@@ -99,15 +109,76 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
       expect(result.meeting.eventTypeName).toBe('Консультация')
       expect(result.meeting.eventTypeDurationMinutes).toBe(30)
       expect(result.meeting.guestEmail).toBe('a@b.c')
+      expect(result.meeting.topic).toBe('Обсудить проект')
+    })
+
+    it('обрезает тему по краям и сохраняет её снимком после удаления типа', () => {
+      const { store, eventTypeId } = seed()
+      const result = createBooking(
+        store,
+        {
+          eventTypeId,
+          startDateTime: iso(9, 0),
+          guestName: 'Аня',
+          topic: '  Обсудить проект  ',
+        },
+        NOW,
+      )
+
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.meeting.topic).toBe('Обсудить проект')
+
+      expect(removeEventType(store, eventTypeId)).toEqual({ ok: true })
+      expect(upcomingMeetings(store, NOW)[0].topic).toBe('Обсудить проект')
+    })
+
+    it('отклоняет пустую, пробельную и слишком длинную тему с 400', () => {
+      const { store, eventTypeId } = seed()
+      const invalidTopics = ['', '   ', 'а'.repeat(201)]
+
+      for (const topic of invalidTopics) {
+        const result = createBooking(
+          store,
+          { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic },
+          NOW,
+        )
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+          expect(result.status).toBe(400)
+          expect(result.message).toMatch(/topic/i)
+        }
+      }
+      expect(store.meetings).toHaveLength(0)
+    })
+
+    it('принимает тему ровно 200 символов после обрезки', () => {
+      const { store, eventTypeId } = seed()
+      const topic = `  ${'а'.repeat(200)}  `
+
+      const result = createBooking(
+        store,
+        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic },
+        NOW,
+      )
+
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.meeting.topic).toBe('а'.repeat(200))
     })
 
     it('возвращает 409 при пересечении с уже занятым слотом', () => {
       const { store, eventTypeId } = seed()
-      createBooking(store, { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня' }, NOW)
+      createBooking(
+        store,
+        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic: 'Тема' },
+        NOW,
+      )
 
       const conflict = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(9, 15), guestName: 'Борис' },
+        { eventTypeId, startDateTime: iso(9, 15), guestName: 'Борис', topic: 'Тема' },
         NOW,
       )
 
@@ -118,11 +189,15 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
     it('допускает запись «впритык» к существующей', () => {
       const { store, eventTypeId } = seed()
-      createBooking(store, { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня' }, NOW)
+      createBooking(
+        store,
+        { eventTypeId, startDateTime: iso(9, 0), guestName: 'Аня', topic: 'Тема' },
+        NOW,
+      )
 
       const backToBack = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(9, 30), guestName: 'Борис' },
+        { eventTypeId, startDateTime: iso(9, 30), guestName: 'Борис', topic: 'Тема' },
         NOW,
       )
 
@@ -134,12 +209,12 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
       const outside = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(8, 0), guestName: 'Аня' },
+        { eventTypeId, startDateTime: iso(8, 0), guestName: 'Аня', topic: 'Тема' },
         NOW,
       )
       const misaligned = createBooking(
         store,
-        { eventTypeId, startDateTime: iso(9, 7), guestName: 'Аня' },
+        { eventTypeId, startDateTime: iso(9, 7), guestName: 'Аня', topic: 'Тема' },
         NOW,
       )
 
@@ -190,8 +265,16 @@ describe('Доменная логика бэкенда (in-memory store)', () =>
 
   it('upcomingMeetings возвращает только будущие встречи, отсортированные', () => {
     const { store, eventTypeId } = seed()
-    createBooking(store, { eventTypeId, startDateTime: iso(10, 0), guestName: 'Аня' }, NOW)
-    createBooking(store, { eventTypeId, startDateTime: iso(9, 0), guestName: 'Борис' }, NOW)
+    createBooking(
+      store,
+      { eventTypeId, startDateTime: iso(10, 0), guestName: 'Аня', topic: 'Тема' },
+      NOW,
+    )
+    createBooking(
+      store,
+      { eventTypeId, startDateTime: iso(9, 0), guestName: 'Борис', topic: 'Тема' },
+      NOW,
+    )
 
     const upcoming = upcomingMeetings(store, NOW)
 

@@ -48,12 +48,13 @@ jobs:
           persist-credentials: false
 
       - name: Run OpenCode
-        # Pinned to v2.2.1 (published 2026-10-29). The `@latest` ref tracks the
-        # `latest` branch in anomalyco/opencode, which has moved under us before
-        # (the 2026-10-29 default-small-model swap to `gpt-5.4-nano` was caught in
-        # .opencode/opencode.jsonc, but a similar break in action.yml itself would
-        # also need a workflow edit). Bump by hand when you've read the diff.
-        uses: anomalyco/opencode/github@v2.2.1
+        # Pinned to v2.1.4 (2026-10 release). The **highest** anomalyco/opencode
+        # release tag that ships `github/action.yml`. `v2.2.0`, `v2.2.1` and
+        # `v2.2.2` no longer publish that sub-directory, and there is no
+        # `refs/heads/latest` branch on the repo (GitHub's `@latest` alias
+        # resolves to the highest semver tag, which is broken). Re-test the
+        # river on every new v2.x release and bump here.
+        uses: anomalyco/opencode/github@v2.1.4
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:

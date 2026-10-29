@@ -56,7 +56,37 @@ import App from '@/App'
 
 **Секрет**: `OPENCODE_API_KEY` (Settings → Secrets and variables → Actions) — ключ шлюза OpenCode, выпущенный в кабинете. Без него запуск падает на аутентификации.
 
-Конфигурация агента для работы с этим репозиторием (трекер, скиллы, домен) лежит в `AGENTS.md` и `docs/agents/`.
+### Конфигурация агента для этого репозитория
+
+Контекст для агента: `AGENTS.md` + `docs/agents/`:
+
+- **Трекер задач** — GitHub Issues через `gh` CLI (`docs/agents/issue-tracker.md`). Метки триажа (`docs/agents/triage-labels.md`): `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`.
+- **Доменные доки** (`docs/agents/domain.md`) — корневой `GLOSSARY.md` и `docs/adr/` (читать перед исследованием кодовой базы).
+
+**Скиллы** (38 штук, `.opencode/skills/`, вызываются как `/имя-скилла`):
+
+- Планирование и разбор задач: `grilling`, `grill-me`, `grill-with-docs`, `to-spec`, `to-tickets`, `to-questionnaire`, `wayfinder`, `loop-me`, `wait-what`
+- Реализация: `implement`, `implement-spec`, `tdd`, `diagnosing-bugs`, `prototype`
+- Код-ревью и архитектура: `code-review`, `codebase-design`, `improve-codebase-architecture`, `setup-ts-deep-modules`
+- Работа с трекером и процесс: `triage`, `chief-of-staff`, `research`, `pr`, `retro`, `ask-matt`
+- Git и безопасность: `git-guardrails-claude-code`, `claude-handoff`, `handoff`
+- Настройка окружения: `setup-matt-pocock-skills`, `setup-pre-commit`, `migrate-to-shoehorn`, `scaffold-exercises`
+- Документация и домен: `domain-modeling`, `writing-for-agents`
+- Преподавание и тексты: `teach`, `writing-beats`, `writing-shape`, `writing-fragments`
+- Инфраструктура: `wizard`
+
+### Проверка проекта
+
+Порядок проверки совпадает с CI (`.github/workflows/ci.yml`):
+
+```bash
+npm run lint           # ESLint
+npm run format:check   # Prettier
+npm test               # Vitest
+npm run build          # typecheck (tsc -b) + production-сборка
+```
+
+Плюс CI-джоба `commitlint` проверяет коммиты по Conventional Commits — сообщения коммитов агента должны быть в формате `type(scope): subject`.
 
 ## Деплой
 

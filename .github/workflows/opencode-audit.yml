@@ -18,13 +18,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'audit — аудит приложения; readme — агент дополняет README описанием воркфлоу'
+        description: 'audit — аудит приложения; readme — агент дополняет README; training — учебный сценарий «аудит без находок»'
         required: false
         default: audit
         type: choice
         options:
           - audit
           - readme
+          - training
 
 # Параллельных аудитов нет: работающий запуск не отменяется (ревью/аудит не
 # должен обрываться на середине), новый встаёт в очередь — GitHub держит один
@@ -52,7 +53,7 @@ jobs:
       # Сбор данных — входной «отчёт» для агента. Free-тариф спит: первый
       # запрос будит сервис (до ~60-90с), max-time 90 покрывает cold start.
       - name: Collect app data
-        if: ${{ inputs.mode != 'readme' }}
+        if: ${{ inputs.mode != 'readme' && inputs.mode != 'training' }}
         env:
           APP_URL: ${{ vars.APP_URL }}
         run: |
@@ -102,7 +103,7 @@ jobs:
           cat "$OUT" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run OpenCode audit
-        if: ${{ inputs.mode != 'readme' }}
+        if: ${{ inputs.mode != 'readme' && inputs.mode != 'training' }}
         # Пин синхронен с opencode.yml и opencode-review.yml: v2.1.4 — последний
         # релиз с github/action.yml. Бампить все воркфлоу вместе.
         uses: anomalyco/opencode/github@v2.1.4
@@ -138,6 +139,35 @@ jobs:
             7. Ничего не коммить и не пушь: отчёт остаётся файлом врабочей директории.
             8. В конце напиши в лог: созданные issues (номера и ссылки), дубликаты
                («пропущено: дубликат #N») или «учебная задача #N».
+
+      # Учебный сценарий «аудит без находок»: симуляция для случая, когда
+      # реальная проверка не даёт находок. Запускается только режимом training.
+      - name: Run OpenCode training scenario
+        if: ${{ inputs.mode == 'training' }}
+        uses: anomalyco/opencode/github@v2.1.4
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode/big-pickle
+          share: 'true'
+          prompt: |
+            Учебный сценарий «аудит без находок» — демонстрация для учебного
+            отчёта. Это симуляция: реальный аудит сейчас не проводится.
+
+            1. Создай файл audit-report.md с заголовком «Учебный отчёт: аудит
+               без находок» и явной пометкой в первых строках, что это
+               демонстрация сценария для учебного задания, а не результаты
+               реальной проверки. В отчёти: какие проверки «прошли» (доступность,
+               JSON-404 для /api, SPA-fallback) и вывод «находок нет».
+            2. Дедупликация: через GitHub найди существующие issues с меткой
+               audit-training. Если учебная задача уже есть — не создавай дубль,
+               упомяни её номер в отчёте и в логе.
+            3. Создай ОДИН issue: заголовок начинается с «[УЧЕБНАЯ ЗАДАЧА]»,
+               метка audit-training, в описании — что это демонстрация сценария
+               «аудит без находок» и ссылка на этот прогон:
+               ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            4. Ничего не коммить и не пушь. В конце напиши в лог номер созданного
+               issue или «дубликат #N».
 
       # Вывод агента дублируется в step summary страницы прогона — так он
       # доступен без раскрытия лога шага.

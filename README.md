@@ -88,6 +88,16 @@ npm run build          # typecheck (tsc -b) + production-сборка
 
 Плюс CI-джоба `commitlint` проверяет коммиты по Conventional Commits — сообщения коммитов агента должны быть в формате `type(scope): subject`.
 
+### Аудит приложения (opencode-audit)
+
+- **Файл**: `.github/workflows/opencode-audit.yml`
+- **Что делает**: ночной аудит развёрнутого приложения по адресу из переменной репозитория `APP_URL`; плюс ручной запуск кнопкой **Run workflow** (`workflow_dispatch`) с режимом `audit` (обычный аудит) или `readme` (агент дополняет этот раздел README)
+- **Расписание**: `cron: '43 3 * * *'` — ежедневно в 03:43 UTC (06:43 MSK)
+- **Права и авторизация**: `id-token: write` — OIDC-обмен на токен GitHub App `opencode-agent`, поэтому агент создаёт issues от имени App, без PAT; `contents`/`pull-requests`/`issues` — только на чтение
+- **Находки**: агент создаёт issues с меткой `audit` (заголовок `audit: <коротко>`, шаги воспроизведения, вывод, предложение по исправлению). При повторных запусках он сначала ищет существующие issues с меткой `audit` и не создаёт дублей — совпавшие находки упоминаются в отчёте со ссылкой на номер issue. Если реальных находок нет, создаётся одна учебная задача с меткой `audit-training`
+- **Результат**: артефакт `audit-report` на странице прогона (**Run → Artifacts**), а также вывод агента в логе шага (и в step summary). В коммиты отчёты не попадают
+- **Пример прогона**: https://github.com/vladimirBolkh/ai-for-developers-project-387/actions/runs/40968704962
+
 ## Деплой
 
 Прод-сборка запускается в Docker-контейнере на **Render** (web service `calls-calendar`, регион Frankfurt, free-тариф): https://calls-calendar-387.onrender.com

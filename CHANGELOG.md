@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.5...v1.4.0) (2026-10-29)
+
+
+### Features
+
+* **booking:** add required meeting topic ([62b45f2](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/62b45f27164073935c5fb4acfd567c4e4b5c7502))
+* **owner:** show meeting topic in upcoming meetings ([7fe29b4](https://github.com/vladimirBolkh/ai-for-developers-project-387/commit/7fe29b413354ddad91a856410b115d10fc5ec02c))
+
 ## [1.3.5](https://github.com/vladimirBolkh/ai-for-developers-project-387/compare/v1.3.4...v1.3.5) (2026-10-29)
 
 

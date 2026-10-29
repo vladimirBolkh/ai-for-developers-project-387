@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Alias for "any lightweight sub-task". Marked deprecated in schema, but kept
+  // as a defensive net for code paths that don't go through `agent.<name>.model`.
+  // 2026-10-29 temporary probe: big-pickle is the opencode.ai "default" free
+  // model (the *only* one explicitly stated as always-available in
+  // https://opencode.ai/go). We're using it here to test whether the 429
+  // `FreeUsageLimitError` is per-model or per-account.
+  "small_model": "opencode/big-pickle",
+
+  // Modern, non-deprecated override of the built-in `title` agent.
+  // Mirrors the build model on purpose: if the title agent stayed on
+  // mimo-v2.6-flash-free, a shared quota would still 429 the title
+  // generation and we couldn't tell which bucket the failure came from.
+  "agent": {
+    "title": {
+      "model": "opencode/big-pickle",
+    },
+  },
+}

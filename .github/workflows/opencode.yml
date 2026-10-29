@@ -48,9 +48,19 @@ jobs:
           persist-credentials: false
 
       - name: Run OpenCode
-        uses: anomalyco/opencode/github@latest
+        # Pinned to v2.2.1 (published 2026-10-29). The `@latest` ref tracks the
+        # `latest` branch in anomalyco/opencode, which has moved under us before
+        # (the 2026-10-29 default-small-model swap to `gpt-5.4-nano` was caught in
+        # .opencode/opencode.jsonc, but a similar break in action.yml itself would
+        # also need a workflow edit). Bump by hand when you've read the diff.
+        uses: anomalyco/opencode/github@v2.2.1
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
-          model: opencode/mimo-v2.6-flash-free
+          # One-shot quota probe (2026-10-29). Tests whether the 429
+          # `FreeUsageLimitError` we hit on `mimo-v2.6-flash-free` is
+          # per-model or per-account. Big Pickle is the only model
+          # listed in the OpenCode Go FAQ as a guaranteed free option
+          # ("Free models include Big Pickle plus promotional models").
+          model: opencode/big-pickle
           share: 'true'

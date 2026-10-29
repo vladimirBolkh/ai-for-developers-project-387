@@ -20,7 +20,7 @@ import {
 } from '@mantine/core'
 import { Calendar } from '@mantine/dates'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 // Каноничная метка дня — локальная дата ISO-момента (строго та же часть даты,
@@ -50,9 +50,27 @@ export default function BookPage() {
 
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
+  const [topic, setTopic] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
+  const [topicError, setTopicError] = useState<string | null>(null)
   const [bookingError, setBookingError] = useState<'validation' | 'unknown' | null>(null)
   const [confirmed, setConfirmed] = useState<Meeting | null>(null)
+
+  const resetGuestIdentity = useCallback(() => {
+    setGuestName('')
+    setGuestEmail('')
+    setNameError(null)
+  }, [])
+
+  const resetTopic = useCallback(() => {
+    setTopic('')
+    setTopicError(null)
+  }, [])
+
+  const resetGuestForm = useCallback(() => {
+    resetGuestIdentity()
+    resetTopic()
+  }, [resetGuestIdentity, resetTopic])
 
   useEffect(() => {
     let cancelled = false
@@ -78,9 +96,7 @@ export default function BookPage() {
     setSelectedSlot(null)
     setConfirmed(null)
     setBookingError(null)
-    setGuestName('')
-    setGuestEmail('')
-    setNameError(null)
+    resetGuestIdentity()
     availabilityGet({ query: { eventTypeId: selectedId } }).then((result) => {
       if (cancelled) return
       const list = asArray<Slot>(result.data)
@@ -92,7 +108,12 @@ export default function BookPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedId, reloadKey])
+  }, [selectedId, reloadKey, resetGuestIdentity])
+
+  // Тема сбрасывается при смене типа, но переживает конфликт слота (409).
+  useEffect(() => {
+    resetTopic()
+  }, [selectedId, resetTopic])
 
   // Дни, на которые есть хотя бы один свободный слот (остальные — disabled + серый фон).
   const availableDays = useMemo(() => {
@@ -157,18 +178,29 @@ export default function BookPage() {
 
   function submitBooking() {
     if (!selectedId || !selectedSlot) return
-    const trimmed = guestName.trim()
-    if (!trimmed) {
+    const trimmedName = guestName.trim()
+    const trimmedTopic = topic.trim()
+    let invalid = false
+    if (!trimmedName) {
       setNameError('Введите имя')
-      return
+      invalid = true
+    } else {
+      setNameError(null)
     }
-    setNameError(null)
+    if (!trimmedTopic) {
+      setTopicError('Введите тему встречи')
+      invalid = true
+    } else {
+      setTopicError(null)
+    }
+    if (invalid) return
     setBookingError(null)
     bookingsCreate({
       body: {
         eventTypeId: selectedId,
         startDateTime: selectedSlot,
-        guestName: trimmed,
+        guestName: trimmedName,
+        topic: trimmedTopic,
         guestEmail: guestEmail.trim() || undefined,
       },
     }).then((result) => {
@@ -192,9 +224,7 @@ export default function BookPage() {
     setConfirmed(null)
     setSelectedSlot(null)
     setSelectedDay(null)
-    setGuestName('')
-    setGuestEmail('')
-    setNameError(null)
+    resetGuestForm()
     setBookingError(null)
     setNotice(null)
     setReloadKey((key) => key + 1)
@@ -267,6 +297,7 @@ export default function BookPage() {
                   <Title order={3}>Вы записаны</Title>
                   <Text fw={600}>{confirmed.eventTypeName}</Text>
                   <Text>{formatSlot(confirmed.startDateTime)}</Text>
+                  <Text c="dimmed">Тема: {confirmed.topic}</Text>
                   <Text c="dimmed">Гость: {confirmed.guestName}</Text>
                   {confirmed.guestEmail && <Text c="dimmed">Email: {confirmed.guestEmail}</Text>}
                   <Group mt="xs">
@@ -288,6 +319,17 @@ export default function BookPage() {
                     value={guestName}
                     onChange={(event) => setGuestName(event.currentTarget.value)}
                     error={nameError ?? undefined}
+                  />
+                  <TextInput
+                    label="Тема встречи"
+                    required
+                    maxLength={200}
+                    value={topic}
+                    onChange={(event) => {
+                      setTopic(event.currentTarget.value)
+                      if (topicError) setTopicError(null)
+                    }}
+                    error={topicError ?? undefined}
                   />
                   <TextInput
                     label="Email"

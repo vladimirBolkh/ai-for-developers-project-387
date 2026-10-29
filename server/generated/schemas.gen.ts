@@ -7,7 +7,8 @@ export const schemas = [
       "required": [
         "eventTypeId",
         "startDateTime",
-        "guestName"
+        "guestName",
+        "topic"
       ],
       "properties": {
         "eventTypeId": {
@@ -17,6 +18,9 @@ export const schemas = [
           "type": "string"
         },
         "guestName": {
+          "type": "string"
+        },
+        "topic": {
           "type": "string"
         },
         "guestEmail": {
@@ -136,7 +140,8 @@ export const schemas = [
         "eventTypeDurationMinutes",
         "eventTypeFormat",
         "startDateTime",
-        "guestName"
+        "guestName",
+        "topic"
       ],
       "properties": {
         "id": {
@@ -162,6 +167,9 @@ export const schemas = [
           "type": "string"
         },
         "guestName": {
+          "type": "string"
+        },
+        "topic": {
           "type": "string"
         },
         "guestEmail": {

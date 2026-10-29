@@ -37,6 +37,7 @@ const meeting: Meeting = {
   eventTypeFormat: 'online',
   startDateTime: at(2026, 9, 21, 9, 0),
   guestName: 'Анна',
+  topic: 'Обсудить проект',
 }
 
 function free(iso: string): Slot {
@@ -229,15 +230,47 @@ describe('Подтверждение записи', () => {
     expect(sdkMocks.bookingsCreate).not.toHaveBeenCalled()
   })
 
-  it('создаёт запись и показывает подтверждение', async () => {
+  it('требует тему перед отправкой и не шлёт запрос', async () => {
+    await pickSlotAndOpenForm()
+    await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+
+    await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
+
+    expect(await screen.findByText('Введите тему встречи')).toBeInTheDocument()
+    expect(sdkMocks.bookingsCreate).not.toHaveBeenCalled()
+  })
+
+  it('считает тему из одних пробелов пустой', async () => {
+    await pickSlotAndOpenForm()
+    await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), '   ')
+
+    await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
+
+    expect(await screen.findByText('Введите тему встречи')).toBeInTheDocument()
+    expect(sdkMocks.bookingsCreate).not.toHaveBeenCalled()
+  })
+
+  it('не даёт ввести больше 200 символов темы', async () => {
+    await pickSlotAndOpenForm()
+    const input = screen.getByLabelText(/Тема встречи/)
+
+    await userEvent.type(input, 'а'.repeat(201))
+
+    expect(input).toHaveValue('а'.repeat(200))
+  })
+
+  it('обрезает тему, отправляет её в запросе и показывает на подтверждении', async () => {
     sdkMocks.bookingsCreate.mockResolvedValue({ data: meeting, error: undefined })
 
     await pickSlotAndOpenForm()
     await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), '  Обсудить проект  ')
     await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
 
     expect(await screen.findByRole('heading', { name: 'Вы записаны' })).toBeInTheDocument()
     expect(screen.getByText('Гость: Анна')).toBeInTheDocument()
+    expect(screen.getByText('Тема: Обсудить проект')).toBeInTheDocument()
     // Вместо календаря и слотов — кнопка «Забронировать ещё».
     expect(screen.getByRole('button', { name: /Забронировать ещё/ })).toBeInTheDocument()
     expect(sdkMocks.bookingsCreate).toHaveBeenCalledWith({
@@ -245,6 +278,7 @@ describe('Подтверждение записи', () => {
         eventTypeId: '1',
         startDateTime: at(2026, 9, 21, 9, 0),
         guestName: 'Анна',
+        topic: 'Обсудить проект',
       },
     })
   })
@@ -254,6 +288,7 @@ describe('Подтверждение записи', () => {
 
     await pickSlotAndOpenForm()
     await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), 'Обсудить проект')
     await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
     await screen.findByRole('heading', { name: 'Вы записаны' })
 
@@ -272,10 +307,29 @@ describe('Подтверждение записи', () => {
 
     await pickSlotAndOpenForm()
     await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), 'Обсудить проект')
     await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
 
     expect(await screen.findByText(/уже занят/i)).toBeInTheDocument()
     expect(screen.queryByText('Ваши данные')).not.toBeInTheDocument()
+  })
+
+  it('не теряет введённую тему после конфликта слота', async () => {
+    sdkMocks.bookingsCreate.mockResolvedValue({
+      data: undefined,
+      error: { message: 'conflict' },
+      response: { status: 409 },
+    })
+
+    await pickSlotAndOpenForm()
+    await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), 'Обсудить проект')
+    await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
+    await screen.findByText(/уже занят/i)
+
+    await userEvent.click(await screen.findByRole('button', { name: /2026-10-21 · 09:00/ }))
+
+    expect(await screen.findByLabelText(/Тема встречи/)).toHaveValue('Обсудить проект')
   })
 
   it('при ошибке валидации (400) показывает сообщение и остаётся в форме', async () => {
@@ -287,6 +341,7 @@ describe('Подтверждение записи', () => {
 
     await pickSlotAndOpenForm()
     await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), 'Обсудить проект')
     await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
 
     expect(await screen.findByText(/Не удалось создать запись/i)).toBeInTheDocument()
@@ -301,6 +356,7 @@ describe('Подтверждение записи', () => {
 
     await pickSlotAndOpenForm()
     await userEvent.type(screen.getByLabelText(/Имя/), 'Анна')
+    await userEvent.type(screen.getByLabelText(/Тема встречи/), 'Обсудить проект')
     await userEvent.click(screen.getByRole('button', { name: /Подтвердить запись/ }))
 
     expect(await screen.findByText(/Что-то пошло не так/i)).toBeInTheDocument()

@@ -325,6 +325,9 @@ export default function OwnerPage() {
                 <Stack gap="sm">
                   {meetings.map((meeting) => (
                     <Paper key={meeting.id} withBorder p="sm" radius="md">
+                      <Text fw={600} c="indigo.7">
+                        {meeting.topic}
+                      </Text>
                       <Text fw={600}>{meeting.guestName}</Text>
                       <Text c="dimmed" size="sm">
                         {meeting.eventTypeName}

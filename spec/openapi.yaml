@@ -224,12 +224,15 @@ components:
         - eventTypeId
         - startDateTime
         - guestName
+        - topic
       properties:
         eventTypeId:
           type: string
         startDateTime:
           type: string
         guestName:
+          type: string
+        topic:
           type: string
         guestEmail:
           type: string
@@ -310,6 +313,7 @@ components:
         - eventTypeFormat
         - startDateTime
         - guestName
+        - topic
       properties:
         id:
           type: string
@@ -327,6 +331,8 @@ components:
         startDateTime:
           type: string
         guestName:
+          type: string
+        topic:
           type: string
         guestEmail:
           type: string

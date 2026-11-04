@@ -44,7 +44,7 @@ jobs:
       issues: read # контекст комментариев PR
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # Глубокая история не нужна: свип читает диф каждого PR через GitHub
           persist-credentials: false

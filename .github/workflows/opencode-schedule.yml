@@ -104,7 +104,7 @@ jobs:
         if: steps.prs.outputs.numbers != ''
         # Пин синхронен с opencode.yml и opencode-review.yml: v2.1.4 — последний
         # релиз с github/action.yml. Бампить все три воркфлоу вместе.
-        uses: anomalyco/opencode/github@v2.1.4
+        uses: anomalyco/opencode/github@v2.2.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:

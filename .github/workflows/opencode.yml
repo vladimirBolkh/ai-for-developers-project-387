@@ -54,7 +54,7 @@ jobs:
         # `refs/heads/latest` branch on the repo (GitHub's `@latest` alias
         # resolves to the highest semver tag, which is broken). Re-test the
         # river on every new v2.x release and bump here.
-        uses: anomalyco/opencode/github@v2.1.4
+        uses: anomalyco/opencode/github@v2.2.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:

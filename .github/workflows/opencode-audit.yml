@@ -106,7 +106,7 @@ jobs:
         if: ${{ inputs.mode != 'readme' && inputs.mode != 'training' }}
         # Пин синхронен с opencode.yml и opencode-review.yml: v2.1.4 — последний
         # релиз с github/action.yml. Бампить все воркфлоу вместе.
-        uses: anomalyco/opencode/github@v2.1.4
+        uses: anomalyco/opencode/github@v2.2.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
@@ -144,7 +144,7 @@ jobs:
       # реальная проверка не даёт находок. Запускается только режимом training.
       - name: Run OpenCode training scenario
         if: ${{ inputs.mode == 'training' }}
-        uses: anomalyco/opencode/github@v2.1.4
+        uses: anomalyco/opencode/github@v2.2.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
@@ -194,7 +194,7 @@ jobs:
 
       - name: Run OpenCode readme update
         if: ${{ inputs.mode == 'readme' }}
-        uses: anomalyco/opencode/github@v2.1.4
+        uses: anomalyco/opencode/github@v2.2.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:

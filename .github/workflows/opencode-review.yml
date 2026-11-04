@@ -115,7 +115,7 @@ jobs:
       issues: read # комментарии PR идут через issues API
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # Вся история: ревьюеру нужен диф против базовой ветки и master
           fetch-depth: 0

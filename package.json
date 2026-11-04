@@ -33,7 +33,7 @@
     "fastify": "^5.12.7",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router-dom": "^7.18.4"
+    "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

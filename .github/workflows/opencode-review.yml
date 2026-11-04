@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Count model runs for this PR
         id: budget
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;

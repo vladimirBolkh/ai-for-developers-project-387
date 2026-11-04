@@ -51,7 +51,7 @@ jobs:
 
       - name: Collect PRs to review
         id: prs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           # Ручной запуск с указанием PR: 'pr' из workflow_dispatch (пусто у schedule)
           PR_INPUT: ${{ inputs.pr }}

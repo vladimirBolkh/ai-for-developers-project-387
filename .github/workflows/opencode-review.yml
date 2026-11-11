@@ -124,7 +124,7 @@ jobs:
       - name: Run OpenCode review
         # Пин синхронен с opencode.yml: v2.1.4 — последний релиз, шипящий
         # github/action.yml (см. комментарий в opencode.yml). Бампить вместе.
-        uses: anomalyco/opencode/github@v2.1.4
+        uses: anomalyco/opencode/github@v2.2.6
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
